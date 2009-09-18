@@ -1,0 +1,200 @@
+#!/usr/bin/perl
+use strict;
+use Getopt::Std::Strict 'hdvnNut';
+use LEOCHARRE::Dir 'lsd';
+use vars qw($VERSION @_PAIRS_CONF @_PAIRS_HOME);
+$VERSION = sprintf "%d.%02d", q$Revision: 1.5 $ =~ /(\d+)/g;
+
+init();
+
+resolve_pairs();
+
+run_pairs();
+
+exit;
+
+
+
+
+sub run_pairs {
+   
+   for (@_PAIRS_CONF){
+      if ($opt_d){ printf STDERR "%s %10s %30s %s\n", ($opt_n ? 1 : 0), 'conf',@$_; }
+      $opt_t and next;
+      $opt_n or next;
+      _runone(@$_);
+   }
+      
+
+   for (@_PAIRS_HOME){
+      if ($opt_d){ printf STDERR "%s %10s %30s %s\n", ($opt_u ? 1 : 0 ),'home',@$_; }      
+      $opt_t and next;
+      $opt_u or next;
+      _runone(@$_);
+   }
+      
+
+   sub _runone {
+      my($usergroup,$path)= @_;
+      $path or die;
+      my @args = ('chown','-R',$usergroup,$path);
+      (print STDERR "cmd: @args\n") if $opt_d;
+      $opt_t and return;
+      warn("Done.\n\n")if $opt_d;
+      system(@args) == 0
+         or warn("bad cmd? '@args', $!\n");         
+
+      return;
+   }
+
+}
+
+
+
+
+
+sub resolve_pairs {
+
+   _resolve_homepairs();
+
+   _resolve_confpairs();
+
+}
+
+sub _resolve_homepairs {
+   
+   my @u = lsd('/home') or warn("No /home users?\n") and return;
+
+   for my $uname (@u){
+      push @_PAIRS_HOME, [ "$uname.$uname", "/home/$uname" ];
+   }
+
+   return;
+}
+
+sub _resolve_confpairs {
+   my $abs_conf = '/etc/chownfu.conf';
+
+   unless(-f $abs_conf){
+      (warn "$abs_conf missing.\n") if $opt_d;
+      return;
+   }
+   require YAML;
+   my $c = YAML::LoadFile($abs_conf);
+
+   for my $arg ( keys %$c ){
+      my $usergroup =
+         $arg=~/\./ ? $arg : "$arg.$arg";
+
+      my $val = $c->{$arg};
+      if ((ref $val) and ref $val eq 'ARRAY'){
+         for (@$val){
+            push @_PAIRS_CONF, [ $usergroup, $_ ];
+         }
+      }
+      else {
+            push @_PAIRS_CONF, [ $usergroup, $val ];
+      }
+   }
+
+   return;
+   
+}
+
+sub init {
+   $opt_h and print usage() and exit;
+   $opt_v and print $VERSION and exit;
+
+   _req_root();
+      
+   $opt_n ||= $opt_N ? 0 : 1;
+   $opt_t and $opt_d = 1;
+}
+
+
+
+
+sub _req_root { `whoami`=~/root/ or die("Must be root.\n") }
+
+sub usage {q{chownfu [OPTION]...
+Recursively chown user dirs to respective users.
+
+   -d    debug
+   -h    help
+   -v    version
+   -N    do not chown user specs in conf
+   -u    chown for /home/* users
+   -t    don't run, just show what would happen
+
+Try 'man chownfu' for more info.
+}}
+
+
+
+__END__
+
+=pod
+
+=head1 NAME
+
+chownfu - recursively chown user dirs to respective users and config file
+
+=head1 USAGE
+
+chownfu [OPTION]...
+
+=head1 OPTION
+
+   -d    debug
+   -h    help
+   -v    version
+   -N    do not chown user specs in conf
+   -u    chown for /home/* users
+   -t    don't run, just show what would happen
+
+=head1 DESCRIPTION
+
+I work as root often. 
+Stuff in /home/username needs to be owned by username.
+This can recursively chown stuff to that, depending on what users are found.
+
+By default this looks inside your /etc/chownfu.conf for instructions.
+If you use the -u flag, we recursively seek users in /home/* to fix ownerships.
+
+=head2 TARGET AUDIENCE
+
+You're a sysadmin and you need to make sure that parts of the system are owned by certain user/groups.
+
+=head1 /etc/chownfu.conf
+
+If found, this YAML config file lists user/group to paths to chown.
+
+   ---
+   leo: /home/otherstuff
+   cham.cham: /var/www
+   dyer.apache: 
+      - /home/dyer
+      - /home/ruffus
+      - /var/log/dyer.log
+
+With this conf, running chownfu with no flags would run this.
+
+=head1 AUTHOR
+
+Leo Charre leocharre at cpan dot org
+
+=head1 COPYRIGHT
+
+Copyright (c) 2008 Leo Charre. All rights reserved.
+
+=head1 LICENSE
+
+This package is free software; you can redistribute it and/or modify it under the same terms as Perl itself, i.e., under the terms of the "Artistic License" or the "GNU General Public License".
+
+=head1 DISCLAIMER
+
+This package is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+See the "GNU General Public License" for more details.
+
+=cut

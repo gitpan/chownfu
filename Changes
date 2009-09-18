@@ -1,0 +1,14 @@
+2009-04-30 11:08  cvs
+
+	* bin/chownfu: made so by default, we do NOT chown /home/*, just
+	  the conf specs
+
+2009-02-12 10:37  cvs
+
+	* Makefile.PL, bin/chownfu: made sure that when we call -t, debug
+	  is on
+
+2009-02-12 10:36  cvs
+
+	* MANIFEST, Makefile.PL, bin/chownfu: Initial revision
+

@@ -1,0 +1,30 @@
+chownfu - recursively chown user dirs to respective users and config file
+===============================================
+
+I work as root often. 
+Stuff in /home/username needs to be owned by username.
+This can recursively chown stuff to that, depending on what users are found.
+
+By default this looks inside your /etc/chownfu.conf for instructions.
+If you use the -u flag, we recursively seek users in /home/* to fix ownerships.
+
+
+INSTALLATION
+
+perl Makefile.PL
+make install
+
+DEPENDENCIES
+
+   Getopt::Std::Strict
+   LEOCHARRE::Dir
+   YAML
+
+COPYRIGHT AND LICENCE
+
+Copyright (C) 2009 by Leo Charre leocharre at cpan dot org
+
+This library is free software; you can redistribute it and/or modify
+it under the same terms as Perl itself, either Perl version 5.8.8 or,
+at your option, any later version of Perl 5 you may have available.
+   
